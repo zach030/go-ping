@@ -18,14 +18,7 @@ type ICMP struct {
 }
 
 func usage() {
-	msg := `
-Need to run as root!
-
-Usage:
-	goping host
-
-	Example: ./goping www.baidu.com`
-
+	msg := `Failed: Need to run with target addr`
 	fmt.Println(msg)
 	os.Exit(0)
 }
@@ -38,7 +31,6 @@ func NewICMPBySeq(seq uint16) *ICMP {
 		Identifier:  0,
 		SequenceNum: seq,
 	}
-
 	var buffer bytes.Buffer
 	binary.Write(&buffer, binary.BigEndian, icmp)
 	icmp.CheckSum = CheckSum(buffer.Bytes())
@@ -53,37 +45,28 @@ func (a *ICMP) sendICMPRequest(destAddr *net.IPAddr) error {
 		return err
 	}
 	defer conn.Close()
-
 	var buffer bytes.Buffer
 	binary.Write(&buffer, binary.BigEndian, a)
-
 	if _, err := conn.Write(buffer.Bytes()); err != nil {
 		return err
 	}
-
 	tStart := time.Now()
-
 	conn.SetReadDeadline(time.Now().Add(time.Second * 2))
-
 	recv := make([]byte, 1024)
 	receiveCnt, err := conn.Read(recv)
-
 	if err != nil {
 		return err
 	}
-
 	tEnd := time.Now()
 	duration := tEnd.Sub(tStart).Nanoseconds() / 1e6
-
 	fmt.Printf("%d bytes from %s: seq=%d time=%dms\n", receiveCnt, destAddr.String(), a.SequenceNum, duration)
-
 	return err
 }
 
 func CheckSum(data []byte) uint16 {
 	var (
 		sum    uint32
-		length int = len(data)
+		length = len(data)
 		index  int
 	)
 	for length > 1 {
@@ -114,6 +97,6 @@ func main() {
 		if err = icmp.sendICMPRequest(remoteAddr); err != nil {
 			fmt.Printf("Error: %s\n", err)
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
